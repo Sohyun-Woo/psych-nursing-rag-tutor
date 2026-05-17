@@ -1,5 +1,5 @@
 """
-평가자 모듈
+평가자 모듈 (OpenAI GPT 버전)
 대화 종료 후 4개 항목 루브릭으로 일괄 평가.
 
 원칙:
@@ -7,12 +7,16 @@
 - 루브릭 가중치 합 = 100
 - excellent/adequate/needs_improvement 3단계 평가
 """
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 import json
 import re
 from typing import Any
 
 import streamlit as st
-from anthropic import Anthropic
 
 from src.simulator import get_client
 
@@ -120,7 +124,6 @@ def _validate_evaluation(evaluation: dict[str, Any], case: dict[str, Any]) -> di
     # criteria_scores 누락 보완
     scores = evaluation.get("criteria_scores", [])
     if len(scores) != len(rubric_names):
-        # 누락된 항목은 0점으로 처리
         existing_names = {s.get("name") for s in scores}
         for c in case["final_rubric"]["criteria"]:
             if c["name"] not in existing_names:
@@ -133,7 +136,7 @@ def _validate_evaluation(evaluation: dict[str, Any], case: dict[str, Any]) -> di
                 })
         evaluation["criteria_scores"] = scores
 
-    # total_score 재계산 (불일치 시 합산값으로 보정)
+    # total_score 재계산
     computed_total = sum(s.get("score", 0) for s in scores)
     evaluation["total_score"] = int(computed_total)
 
@@ -151,7 +154,6 @@ def _validate_evaluation(evaluation: dict[str, Any], case: dict[str, Any]) -> di
     if not evaluation.get("interpretation"):
         evaluation["interpretation"] = default_interp
 
-    # 빈 필드 기본값
     evaluation.setdefault("strengths", ["[강점 분석 데이터 없음]"])
     evaluation.setdefault("improvements", ["[개선점 분석 데이터 없음]"])
     evaluation.setdefault("references", case.get("rag_priority_sources", []))
@@ -166,25 +168,18 @@ def evaluate_conversation(
 ) -> dict[str, Any]:
     """
     대화 종료 후 일괄 평가.
-
-    Args:
-        case: 사례 JSON 데이터
-        conversation_history: 전체 대화 (내부 형식)
-        rag_context: RAG 파이프라인이 검색한 근거기반 컨텍스트
-
-    Returns:
-        평가 결과 딕셔너리
     """
     client = get_client()
     prompt = _build_evaluation_prompt(case, conversation_history, rag_context)
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=2500,
             messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
         )
-        raw_text = response.content[0].text
+        raw_text = response.choices[0].message.content
 
         evaluation = _extract_json(raw_text)
         if not evaluation:
