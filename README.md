@@ -16,8 +16,12 @@ Generation) 기반 AI 튜터**입니다. 학생이 가상의 정신건강 사례
 응답을 입력하면, 시스템이 WHO 국제 표준 가이드라인에 비추어 형성적 피드백을 
 제공합니다.
 
-- 🔗 **데모 사이트**: (https://psych-nursing-rag-tutor.streamlit.app/)
-- 👤 **개발**: 우소현 (정신간호학 박사)
+## 🌐 데모 페이지
+
+### 👉 **[https://psych-nursing-rag-tutor.streamlit.app/](https://psych-nursing-rag-tutor.streamlit.app/)**
+
+위 링크를 클릭하면 즉시 챗봇과 대화를 시작하실 수 있습니다.
+
 
 ---
 
